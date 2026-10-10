@@ -28,11 +28,11 @@ jobs:
       - name: Verify main.dart
         run: |
           if [ ! -f lib/main.dart ]; then
-            echo "::error::lib/main.dart file hi nahi mili! Repo me lib/main.dart banao."
+            echo "::error::lib/main.dart file nahi mili!"
             exit 1
           fi
-          echo "::notice::main.dart lines: $(wc -l < lib/main.dart)"
-          echo "::notice::pehli line: $(head -n 1 lib/main.dart)"
+          echo "main.dart lines: $(wc -l < lib/main.dart)"
+          echo "pehli line: $(head -n 1 lib/main.dart)"
           if grep -q "speech_to_text" lib/main.dart; then
             echo "::error::lib/main.dart me PURANA MAX code hai. Meri Dukan wala code paste karo."
             exit 1
@@ -40,8 +40,9 @@ jobs:
 
       - name: Recreate Android project
         run: |
-          rm -rf android
+          rm -rf android test
           flutter create --platforms=android --project-name dukan_app .
+          rm -rf test
 
       - name: Write pubspec.yaml
         run: |
@@ -70,11 +71,11 @@ jobs:
       - name: Get packages
         run: flutter pub get
 
-      - name: Check Dart errors
+      - name: Check Dart errors (sirf lib folder)
         shell: bash
         run: |
-          flutter analyze --no-fatal-infos --no-fatal-warnings > analyze.log 2>&1 || true
-          cat analyze.log | tail -n 40
+          flutter analyze lib --no-fatal-infos --no-fatal-warnings > analyze.log 2>&1 || true
+          tail -n 30 analyze.log
           if grep -qE '^\s*error' analyze.log; then
             grep -E '^\s*error' analyze.log | head -n 8 | while IFS= read -r line; do
               echo "::error::$line"
@@ -84,14 +85,19 @@ jobs:
 
       - name: Build release APK
         shell: bash
-        run: flutter build apk --release 2>&1 | tee build.log
-
-      - name: Show errors (sirf fail hone par)
-        if: failure()
         run: |
-          grep -n -E -A4 "What went wrong|error:|Error:|Could not" build.log | head -n 30 | while IFS= read -r l; do
-            echo "::error::$l"
-          done
+          set -o pipefail
+          flutter build apk --release 2>&1 | tee build.log
+
+      - name: Show errors (sirf build fail hone par)
+        if: failure()
+        shell: bash
+        run: |
+          if [ -f build.log ]; then
+            grep -n -E -A4 "What went wrong|error:|Error:|Could not" build.log | head -n 30 | while IFS= read -r l; do
+              echo "::error::$l"
+            done
+          fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
