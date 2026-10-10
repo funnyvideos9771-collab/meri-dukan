@@ -14,6 +14,115 @@ const kOrange = Color(0xFFFFB020);
 const kGreen = Color(0xFF2EE59D);
 const kRed = Color(0xFFFF5470);
 
+const kDefaultShop = 'Ganpati General Store';
+
+// ------------------------------------------------------- wallpaper themes
+class WallTheme {
+  final String name;
+  final List<Color> bg;
+  final List<Color> orbs;
+  final Color gold;
+  const WallTheme(this.name, this.bg, this.orbs, this.gold);
+}
+
+const walls = <WallTheme>[
+  WallTheme(
+    'Kesariya Royal',
+    [Color(0xFF2A0A1C), Color(0xFF4B1128), Color(0xFF1B0B33)],
+    [Color(0xFFFF8A00), Color(0xFFFFC107), Color(0xFFFF4D8D)],
+    Color(0xFFFFC857),
+  ),
+  WallTheme(
+    'Neon Night',
+    [Color(0xFF0A0F24), Color(0xFF1A1040), Color(0xFF071A2E)],
+    [kTeal, kPurple, kPink],
+    kTeal,
+  ),
+  WallTheme(
+    'Emerald Gold',
+    [Color(0xFF031D17), Color(0xFF0B3B2E), Color(0xFF07151F)],
+    [Color(0xFF00C896), Color(0xFFFFC857), Color(0xFF2E86DE)],
+    Color(0xFFFFD166),
+  ),
+];
+
+class WallPainter extends CustomPainter {
+  final double t;
+  final WallTheme th;
+  WallPainter(this.t, this.th);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width, h = size.height;
+    final rect = Offset.zero & size;
+
+    // base gradient
+    canvas.drawRect(
+        rect,
+        Paint()
+          ..shader = LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: th.bg)
+              .createShader(rect));
+
+    // floating glow orbs
+    for (var i = 0; i < 6; i++) {
+      final ph = i * 1.047;
+      final cx = w * (0.15 + 0.7 * ((i * 37 % 100) / 100)) + math.sin(t * 2 * math.pi + ph) * 40;
+      final cy = h * (0.1 + 0.8 * ((i * 53 % 100) / 100)) + math.cos(t * 2 * math.pi + ph) * 50;
+      final r = 110.0 + (i % 3) * 40;
+      final c = th.orbs[i % th.orbs.length];
+      canvas.drawCircle(
+          Offset(cx, cy),
+          r,
+          Paint()
+            ..shader = RadialGradient(colors: [c.withOpacity(0.28), c.withOpacity(0.0)])
+                .createShader(Rect.fromCircle(center: Offset(cx, cy), radius: r)));
+    }
+
+    // rotating mandala
+    final mc = Offset(w * 0.5, h * 0.2);
+    final mp = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..color = th.gold.withOpacity(0.10);
+    for (var i = 0; i < 12; i++) {
+      canvas.save();
+      canvas.translate(mc.dx, mc.dy);
+      canvas.rotate(i * math.pi / 12 + t * 2 * math.pi * 0.25);
+      canvas.drawOval(Rect.fromCenter(center: Offset.zero, width: 360, height: 96), mp);
+      canvas.restore();
+    }
+    for (final r in [60.0, 110.0, 165.0]) {
+      canvas.drawCircle(mc, r, mp);
+    }
+
+    // dot pattern
+    final dp = Paint()..color = Colors.white.withOpacity(0.05);
+    for (double x = 14; x < w; x += 30) {
+      for (double y = 14; y < h; y += 30) {
+        canvas.drawCircle(Offset(x, y), 1.1, dp);
+      }
+    }
+
+    // OM watermark
+    final tp = TextPainter(
+      text: TextSpan(text: 'ॐ', style: TextStyle(fontSize: 300, color: th.gold.withOpacity(0.05))),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    tp.paint(canvas, Offset(w - tp.width * 0.8, h - tp.height * 0.9));
+
+    // vignette
+    canvas.drawRect(
+        rect,
+        Paint()
+          ..shader = RadialGradient(
+                  center: Alignment.center, radius: 1.1, colors: [Colors.transparent, Colors.black.withOpacity(0.45)])
+              .createShader(rect));
+  }
+
+  @override
+  bool shouldRepaint(WallPainter o) => true;
+}
+
 // ------------------------------------------------------------ helpers
 String money(double v) {
   final neg = v < 0;
@@ -66,12 +175,12 @@ Widget glass({
             padding: padding,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: colors ?? [Colors.white.withOpacity(0.09), Colors.white.withOpacity(0.03)],
+                colors: colors ?? [Colors.black.withOpacity(0.42), Colors.black.withOpacity(0.28)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.white.withOpacity(0.12)),
+              border: Border.all(color: Colors.white.withOpacity(0.14)),
             ),
             child: child,
           ),
@@ -84,7 +193,7 @@ InputDecoration dec(String label, {String? suffix, IconData? icon}) => InputDeco
       suffixText: suffix,
       prefixIcon: icon == null ? null : Icon(icon, color: kTeal, size: 20),
       filled: true,
-      fillColor: Colors.white.withOpacity(0.06),
+      fillColor: Colors.white.withOpacity(0.07),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
       enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.white.withOpacity(0.1))),
@@ -211,7 +320,7 @@ class DukanApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'Meri Dukan',
+        title: 'Ganpati General Store',
         theme: ThemeData(brightness: Brightness.dark, colorSchemeSeed: kTeal, useMaterial3: true),
         home: const Home(),
       );
@@ -223,23 +332,28 @@ class Home extends StatefulWidget {
   State<Home> createState() => _HomeState();
 }
 
-class _HomeState extends State<Home> {
-  String shop = 'Meri Dukan';
+class _HomeState extends State<Home> with TickerProviderStateMixin {
+  String shop = kDefaultShop;
   List<Item> items = [];
   List<Sale> sales = [];
-  int tab = 0, filter = 0;
+  int tab = 0, filter = 0, wall = 0;
   String query = '';
   final shopCtl = TextEditingController();
   String expr = '', result = '';
+  late final AnimationController _bg, _shine;
 
   @override
   void initState() {
     super.initState();
+    _bg = AnimationController(vsync: this, duration: const Duration(seconds: 40))..repeat();
+    _shine = AnimationController(vsync: this, duration: const Duration(milliseconds: 3600))..repeat();
     _load();
   }
 
   @override
   void dispose() {
+    _bg.dispose();
+    _shine.dispose();
     shopCtl.dispose();
     super.dispose();
   }
@@ -248,8 +362,10 @@ class _HomeState extends State<Home> {
     final p = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() {
-      shop = p.getString('shop') ?? 'Meri Dukan';
-      shopCtl.text = shop == 'Meri Dukan' ? '' : shop;
+      shop = p.getString('shop') ?? kDefaultShop;
+      if (shop == 'Meri Dukan') shop = kDefaultShop;
+      shopCtl.text = shop;
+      wall = (p.getInt('wall') ?? 0) % walls.length;
       items = (p.getStringList('items') ?? [])
           .map((s) => Item.fromJson(Map<String, dynamic>.from(jsonDecode(s) as Map)))
           .toList();
@@ -262,8 +378,15 @@ class _HomeState extends State<Home> {
   Future<void> _save() async {
     final p = await SharedPreferences.getInstance();
     await p.setString('shop', shop);
+    await p.setInt('wall', wall);
     await p.setStringList('items', items.map((e) => jsonEncode(e.toJson())).toList());
     await p.setStringList('sales', sales.map((e) => jsonEncode(e.toJson())).toList());
+  }
+
+  void _nextWall() {
+    setState(() => wall = (wall + 1) % walls.length);
+    _save();
+    _snack('Wallpaper: ${walls[wall].name}');
   }
 
   void _snack(String m) {
@@ -503,58 +626,141 @@ class _HomeState extends State<Home> {
     );
   }
 
-  // --------------------------------------------------------- dashboard
+  // ------------------------------------------------- signboard header
+  Widget _ornament(WallTheme th) => Row(children: [
+        Expanded(
+            child: Container(
+                height: 1.4,
+                decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.transparent, th.gold])))),
+        Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Icon(Icons.auto_awesome, size: 14, color: th.gold)),
+        Expanded(
+            child: Container(
+                height: 1.4,
+                decoration: BoxDecoration(gradient: LinearGradient(colors: [th.gold, Colors.transparent])))),
+      ]);
+
+  Widget _signboard(WallTheme th) {
+    return AnimatedBuilder(
+      animation: _shine,
+      builder: (_, __) {
+        final bx = -2.2 + 4.4 * _shine.value;
+        final shader = LinearGradient(
+          begin: Alignment(bx - 0.5, 0),
+          end: Alignment(bx + 0.5, 0),
+          colors: [th.gold, const Color(0xFFFFFBE6), th.gold],
+        );
+        const base = TextStyle(fontFamily: 'serif', fontSize: 36, fontWeight: FontWeight.w900, letterSpacing: 1.5, height: 1.1);
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(26),
+            gradient: LinearGradient(
+              colors: [Colors.black.withOpacity(0.55), th.orbs[0].withOpacity(0.22), Colors.black.withOpacity(0.55)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            border: Border.all(color: th.gold, width: 2),
+            boxShadow: [
+              BoxShadow(color: th.gold.withOpacity(0.45), blurRadius: 28, spreadRadius: 1),
+              BoxShadow(color: th.orbs[0].withOpacity(0.25), blurRadius: 50),
+            ],
+          ),
+          child: Column(children: [
+            _ornament(th),
+            const SizedBox(height: 8),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Stack(alignment: Alignment.center, children: [
+                Text(shop,
+                    maxLines: 1,
+                    style: base.copyWith(color: th.gold, shadows: [
+                      Shadow(color: th.gold.withOpacity(0.9), blurRadius: 22),
+                      const Shadow(color: Colors.black, blurRadius: 6, offset: Offset(0, 3)),
+                    ])),
+                ShaderMask(
+                  blendMode: BlendMode.srcIn,
+                  shaderCallback: (r) => shader.createShader(r),
+                  child: Text(shop, maxLines: 1, style: base.copyWith(color: Colors.white)),
+                ),
+              ]),
+            ),
+            const SizedBox(height: 8),
+            _ornament(th),
+            const SizedBox(height: 6),
+            const Text('STOCK  •  HISAAB  •  MUNAFA',
+                style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 3, fontWeight: FontWeight.w700)),
+          ]),
+        );
+      },
+    );
+  }
+
+  Widget _pill(IconData i, String t, Color c) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+            color: c.withOpacity(0.16),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: c.withOpacity(0.5))),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(i, size: 14, color: c),
+          const SizedBox(width: 5),
+          Text(t, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
+        ]),
+      );
+
   Widget _header() {
+    final th = walls[wall];
     final khatam = items.where((e) => e.status == 2).length;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 22),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [kPurple, Color(0xFF3B82F6), kTeal], begin: Alignment.topLeft, end: Alignment.bottomRight),
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(34)),
-        boxShadow: [BoxShadow(color: kPurple.withOpacity(0.5), blurRadius: 24, offset: const Offset(0, 8))],
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Row(children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(18)),
-            child: const Icon(Icons.storefront, size: 32, color: Colors.white),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(shop,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      letterSpacing: 0.4,
-                      shadows: [Shadow(color: Colors.black38, blurRadius: 8)])),
-              const SizedBox(height: 2),
-              Text(_dateStr(), style: const TextStyle(color: Colors.white70, fontSize: 12)),
-              Text('${items.length} items  •  $khatam khatam',
-                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
-            ]),
-          ),
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 6, bottom: 4),
+        child: Column(children: [
+          Row(children: [
+            const SizedBox(width: 48),
+            Expanded(
+              child: Center(
+                child: Text('॥ श्री गणेशाय नमः ॥',
+                    style: TextStyle(
+                        color: th.gold,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                        letterSpacing: 1.2,
+                        shadows: [Shadow(color: th.gold.withOpacity(0.5), blurRadius: 10)])),
+              ),
+            ),
+            IconButton(
+                tooltip: 'Wallpaper badlein',
+                icon: Icon(Icons.palette, color: th.gold),
+                onPressed: _nextWall),
+          ]),
+          const SizedBox(height: 4),
+          _signboard(th),
+          const SizedBox(height: 10),
+          Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 6, children: [
+            _pill(Icons.calendar_today, _dateStr(), th.gold),
+            _pill(Icons.inventory_2, '${items.length} items', kTeal),
+            _pill(Icons.remove_shopping_cart, '$khatam khatam', khatam > 0 ? kRed : kGreen),
+          ]),
         ]),
       ),
     );
   }
 
+  // --------------------------------------------------------- dashboard
   Widget _statCard(IconData icon, String label, String value, Color c) => Expanded(
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             gradient: LinearGradient(
-                colors: [c.withOpacity(0.28), c.withOpacity(0.06)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-            border: Border.all(color: c.withOpacity(0.4)),
+                colors: [c.withOpacity(0.30), Colors.black.withOpacity(0.35)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight),
+            border: Border.all(color: c.withOpacity(0.45)),
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Icon(icon, color: c, size: 22),
@@ -593,7 +799,7 @@ class _HomeState extends State<Home> {
     final c = it.status == 0 ? kGreen : (it.status == 1 ? kOrange : kRed);
     final pc = it.unitProfit >= 0 ? kGreen : kRed;
     return glass(
-      colors: [c.withOpacity(0.10), Colors.white.withOpacity(0.03)],
+      colors: [c.withOpacity(0.16), Colors.black.withOpacity(0.40)],
       child: Column(children: [
         Row(children: [
           Container(
@@ -649,6 +855,7 @@ class _HomeState extends State<Home> {
   }
 
   Widget _dashboard() {
+    final th = walls[wall];
     final shown = items.where((e) {
       if (filter == 1 && e.status != 0) return false;
       if (filter == 2 && e.status != 1) return false;
@@ -682,9 +889,10 @@ class _HomeState extends State<Home> {
     ];
 
     return Column(children: [
-      _header(),
       Expanded(
-        child: ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 8), children: [
+        child: ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 8), children: [
+          _header(),
+          const SizedBox(height: 14),
           Row(children: [
             _statCard(Icons.today, 'Aaj ki bikri', money(todaySale), kTeal),
             const SizedBox(width: 10),
@@ -700,10 +908,10 @@ class _HomeState extends State<Home> {
           glass(
             padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                const Icon(Icons.bar_chart_rounded, color: kTeal),
-                const SizedBox(width: 8),
-                const Text('Item-wise Munafa (stock par)', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+              Row(children: const [
+                Icon(Icons.bar_chart_rounded, color: kTeal),
+                SizedBox(width: 8),
+                Text('Item-wise Munafa (stock par)', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
               ]),
               const SizedBox(height: 8),
               SizedBox(
@@ -767,14 +975,14 @@ class _HomeState extends State<Home> {
       Container(
         padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: [Color(0xFF1B1F3B), Color(0xFF0F2A3A)]),
+          gradient: LinearGradient(colors: [Colors.black.withOpacity(0.78), Colors.black.withOpacity(0.62)]),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border(top: BorderSide(color: kTeal.withOpacity(0.5))),
-          boxShadow: [BoxShadow(color: kTeal.withOpacity(0.2), blurRadius: 18)],
+          border: Border(top: BorderSide(color: th.gold.withOpacity(0.7), width: 1.5)),
+          boxShadow: [BoxShadow(color: th.gold.withOpacity(0.25), blurRadius: 18)],
         ),
         child: Row(children: [
           _totalCol('KUL KHARID', money(tBuy), Colors.white),
-          _totalCol('KUL BIKRI', money(tSell), kTeal),
+          _totalCol('KUL BIKRI', money(tSell), th.gold),
           _totalCol('KUL MUNAFA', money(tProfit), tProfit >= 0 ? kGreen : kRed),
         ]),
       ),
@@ -803,13 +1011,13 @@ class _HomeState extends State<Home> {
           ),
         ),
         glass(
-          colors: [kPurple.withOpacity(0.25), kTeal.withOpacity(0.08)],
+          colors: [kPurple.withOpacity(0.30), Colors.black.withOpacity(0.40)],
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('Dukan ka naam', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
             const SizedBox(height: 4),
-            const Text('Ye Dashboard ke sabse upar dikhega', style: TextStyle(color: Colors.white60, fontSize: 12)),
+            const Text('Ye Dashboard ke sabse upar signboard me dikhega', style: TextStyle(color: Colors.white60, fontSize: 12)),
             const SizedBox(height: 10),
-            TextField(controller: shopCtl, textCapitalization: TextCapitalization.words, decoration: dec('Jaise: Sharma General Store', icon: Icons.storefront)),
+            TextField(controller: shopCtl, textCapitalization: TextCapitalization.words, decoration: dec('Jaise: Ganpati General Store', icon: Icons.storefront)),
             const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
@@ -817,7 +1025,7 @@ class _HomeState extends State<Home> {
                 style: FilledButton.styleFrom(backgroundColor: kPurple),
                 onPressed: () {
                   final n = shopCtl.text.trim();
-                  setState(() => shop = n.isEmpty ? 'Meri Dukan' : n);
+                  setState(() => shop = n.isEmpty ? kDefaultShop : n);
                   _save();
                   FocusScope.of(context).unfocus();
                   _snack('Dukan ka naam save ho gaya');
@@ -1040,9 +1248,9 @@ class _HomeState extends State<Home> {
     const keys = ['C', '⌫', '%', '÷', '7', '8', '9', '×', '4', '5', '6', '-', '1', '2', '3', '+', '00', '0', '.', '='];
     Color bg(String k) {
       if (k == '=') return kTeal;
-      if (['÷', '×', '-', '+'].contains(k)) return kPurple.withOpacity(0.6);
-      if (['C', '⌫', '%'].contains(k)) return kPink.withOpacity(0.35);
-      return Colors.white.withOpacity(0.08);
+      if (['÷', '×', '-', '+'].contains(k)) return kPurple.withOpacity(0.7);
+      if (['C', '⌫', '%'].contains(k)) return kPink.withOpacity(0.4);
+      return Colors.black.withOpacity(0.45);
     }
 
     return Column(children: [
@@ -1065,8 +1273,8 @@ class _HomeState extends State<Home> {
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
-            gradient: LinearGradient(colors: [kPurple.withOpacity(0.25), kTeal.withOpacity(0.1)]),
-            border: Border.all(color: Colors.white.withOpacity(0.12)),
+            gradient: LinearGradient(colors: [kPurple.withOpacity(0.30), Colors.black.withOpacity(0.45)]),
+            border: Border.all(color: Colors.white.withOpacity(0.14)),
           ),
           child: Column(mainAxisAlignment: MainAxisAlignment.end, crossAxisAlignment: CrossAxisAlignment.end, children: [
             FittedBox(
@@ -1116,15 +1324,21 @@ class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     final pages = [_dashboard(), _master(), _salesPage(), _calc()];
-    return Container(
-      decoration: const BoxDecoration(
-          gradient: LinearGradient(colors: [kBg1, kBg2], begin: Alignment.topCenter, end: Alignment.bottomCenter)),
-      child: Scaffold(
+    return Stack(children: [
+      Positioned.fill(
+        child: RepaintBoundary(
+          child: AnimatedBuilder(
+            animation: _bg,
+            builder: (_, __) => CustomPaint(painter: WallPainter(_bg.value, walls[wall])),
+          ),
+        ),
+      ),
+      Scaffold(
         backgroundColor: Colors.transparent,
         body: pages[tab],
         bottomNavigationBar: NavigationBar(
-          backgroundColor: const Color(0xFF10142B),
-          indicatorColor: kTeal.withOpacity(0.25),
+          backgroundColor: const Color(0xD90B0F1F),
+          indicatorColor: walls[wall].gold.withOpacity(0.28),
           selectedIndex: tab,
           onDestinationSelected: (i) => setState(() => tab = i),
           destinations: const [
@@ -1135,6 +1349,6 @@ class _HomeState extends State<Home> {
           ],
         ),
       ),
-    );
+    ]);
   }
 }
