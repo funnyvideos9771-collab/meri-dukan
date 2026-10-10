@@ -25,6 +25,19 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Verify main.dart
+        run: |
+          if [ ! -f lib/main.dart ]; then
+            echo "::error::lib/main.dart file hi nahi mili! Repo me lib/main.dart banao."
+            exit 1
+          fi
+          echo "::notice::main.dart lines: $(wc -l < lib/main.dart)"
+          echo "::notice::pehli line: $(head -n 1 lib/main.dart)"
+          if grep -q "speech_to_text" lib/main.dart; then
+            echo "::error::lib/main.dart me PURANA MAX code hai. Meri Dukan wala code paste karo."
+            exit 1
+          fi
+
       - name: Recreate Android project
         run: |
           rm -rf android
@@ -58,7 +71,16 @@ jobs:
         run: flutter pub get
 
       - name: Check Dart errors
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings 2>&1 | grep -E "error" || true
+        shell: bash
+        run: |
+          flutter analyze --no-fatal-infos --no-fatal-warnings > analyze.log 2>&1 || true
+          cat analyze.log | tail -n 40
+          if grep -qE '^\s*error' analyze.log; then
+            grep -E '^\s*error' analyze.log | head -n 8 | while IFS= read -r line; do
+              echo "::error::$line"
+            done
+            exit 1
+          fi
 
       - name: Build release APK
         shell: bash
@@ -67,8 +89,9 @@ jobs:
       - name: Show errors (sirf fail hone par)
         if: failure()
         run: |
-          echo "=========== ASLI ERROR YAHAN HAI ==========="
-          grep -n -E -B1 -A6 "lib/.*(Error|error)|Error:|What went wrong|Could not|FAILURE|Execution failed|AAPT|Duplicate|not found" build.log | head -120
+          grep -n -E -A4 "What went wrong|error:|Error:|Could not" build.log | head -n 30 | while IFS= read -r l; do
+            echo "::error::$l"
+          done
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
