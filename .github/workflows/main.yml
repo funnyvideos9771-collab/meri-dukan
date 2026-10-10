@@ -61,7 +61,14 @@ jobs:
         run: flutter analyze --no-fatal-infos --no-fatal-warnings 2>&1 | grep -E "error" || true
 
       - name: Build release APK
-        run: flutter build apk --release
+        shell: bash
+        run: flutter build apk --release 2>&1 | tee build.log
+
+      - name: Show errors (sirf fail hone par)
+        if: failure()
+        run: |
+          echo "=========== ASLI ERROR YAHAN HAI ==========="
+          grep -n -E -B1 -A6 "lib/.*(Error|error)|Error:|What went wrong|Could not|FAILURE|Execution failed|AAPT|Duplicate|not found" build.log | head -120
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
